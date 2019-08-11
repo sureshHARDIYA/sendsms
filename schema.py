@@ -1,19 +1,31 @@
-from graphene import ObjectType, String, Schema
+from graphene import ObjectType, String, Schema, ID, Field, List
+from collections import namedtuple
+
+import json
+
+data = {
+    "rows": [
+        {"title": "This", "id": "1", "content": "Fucking amazing." },
+        {"title": "This 2", "id": "2", "content": "Fucking amazing 2." }
+    ]
+}
+
+class Post(ObjectType):
+    id = ID(required=True)
+    title = String(required=True)
+    content = String()
+    # categories=List(lambda: Category)
+
+def _json_object_hook(d):
+    return namedtuple('X', d.keys())(*d.values())
+
+def json2obj(data):
+    return json.loads(data, object_hook=_json_object_hook)
 
 class Query(ObjectType):
-    # this defines a Field `hello` in our Schema with a single Argument `name`
-    hello = String(name=String(default_value="stranger"))
-    goodbye = String()
+    posts = Field(Post)
 
-    # our Resolver method takes the GraphQL context (root, info) as well as
-    # Argument (name) for the Field and returns data for the query Response
-    def resolve_hello(root, info, name):
-        return f'Hello {name}!'
-
-    def resolve_goodbye(root, info):
-        return 'See ya!'
+    def resolve_posts(context, info):
+        return json2obj(json.dumps(data))
 
 Schema = Schema(query=Query)
-
-# Schema = GraphQLSchema(QueryRootType, MutationRootType)
-# Schema = graphene.Schema(query=QueryRootType, mutation=MutationRootType)
