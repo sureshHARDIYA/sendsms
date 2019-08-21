@@ -1,31 +1,28 @@
-from graphene import ObjectType, String, Schema, ID, Field, List
-from collections import namedtuple
+import graphene
+from graphene.relay import Node
+from graphene_mongo import MongoengineConnectionField, MongoengineObjectType
+from models import User as UserModel
+from models import Role as RoleModel
 
-import json
+class Role(MongoengineObjectType):
 
-data = {
-    "rows": [
-        {"title": "This", "id": "1", "content": "Fucking amazing." },
-        {"title": "This 2", "id": "2", "content": "Fucking amazing 2." }
-    ]
-}
+    class Meta:
+        model = RoleModel
+        interfaces = (Node,)
 
-class Post(ObjectType):
-    id = ID(required=True)
-    title = String(required=True)
-    content = String()
-    # categories=List(lambda: Category)
 
-def _json_object_hook(d):
-    return namedtuple('X', d.keys())(*d.values())
+class User(MongoengineObjectType):
 
-def json2obj(data):
-    return json.loads(data, object_hook=_json_object_hook)
+    class Meta:
+        model = UserModel
+        interfaces = (Node,)
 
-class Query(ObjectType):
-    posts = Field(Post)
 
-    def resolve_posts(context, info):
-        return json2obj(json.dumps(data))
+class Query(graphene.ObjectType):
+    node = Node.Field()
+    all_employees = MongoengineConnectionField(User)
+    all_roles = MongoengineConnectionField(Role)
+    role = graphene.Field(Role)
 
-Schema = Schema(query=Query)
+
+schema = graphene.Schema(query=Query, types=[User, Role])
